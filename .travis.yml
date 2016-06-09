@@ -19,7 +19,7 @@ deploy:
   skip_cleanup: true
   api_key:
     secure: DWU3K/0mxfXl7dm3o3/RbBGHURo7PX/Leb9NdKSxoh0MU+jTfBeo/Ozw0XKxn+MNy2dEn0wL2E7HI/RQwTBiTeQH/buEfZYabZc+B7CkyOiv5FOYLWEFcgXOD2YbCLVgCMvzgXN+DJwlZS8bQfSM3HcFGpBVBMCDC21SxMJbE88a6GEpCSVe0PQoB8Oc2uXLEsYF/lVytXNYdoNd7JfRANTaw/vRAR8xwLb0tCDl9BDqEoMEAuAMbiQynqGX6t+PHsm27GH7FA2VVnPJI8gIZsxgZtQAVCh4klShUsb9oIrTdnuG8JkvKYYrFDgO/ydy81i75qly3RUoBU4qPGn+nSE6qYRRZZMQhZtui7Kz0yWrNMgOdOCuE58oZPYmC/LpxVtllZnq0k5jduEaWtR6ycUSHt7EVRIddksTBOCpRNNT0hlsOs5fN9T8lQolYI0bQ7CFjwgSbJvhfSjGLd+rCI/zqImn02AS0ytnZpC3zXg8tBFCCUga7aEl3ekGb2Bk5oi5tt7VTEnaC3gUZYbeos8FXEuqEHkNnd5RPock8StCOaDvwYWWc1Os1aKtpGUNdLNOrjFb6T/mW5lY89+z4JWkV7Fy9eTj7+fdVi3GaaDK81ohwnai6c6lIb8gNfvK+ietdZmKQkm4be7JsfpM35Uo9HER+4LgS2zB8+Bvbro=
-  file: target/zcast-all-*.*.*.jar
+  file: target/zcast-all-*.jar
   on:
     repo: zalora/zcast
     tags: true
