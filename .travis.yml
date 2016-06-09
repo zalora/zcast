@@ -11,8 +11,6 @@ jdk:
 os:
 - linux
 
-script: mvn package
-
 before_deploy: export DEPLOY_JAR=$(ls target/zcast-all-*.jar)
 deploy:
   provider: releases
