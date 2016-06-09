@@ -1,0 +1,14 @@
+language: java
+sudo: false
+
+cache:
+ directories:
+   - $HOME/.m2
+
+jdk:
+  - oraclejdk8
+
+os:
+  - linux
+
+script: mvn package
