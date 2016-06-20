@@ -30,7 +30,7 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
     private static final LZ4Compressor compressor;
     private static final LZ4FastDecompressor fastDecompressor;
 
-    private final ILogger logger;
+    private final transient ILogger logger;
 
     static {
         lz4Factory = LZ4Factory.fastestInstance();
@@ -84,17 +84,17 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         final MemcacheEntry entry = (MemcacheEntry) value;
         final int flag = entry.getFlag();
+
+        // If flags are not PHP values, then it's probably already compressed, so we don't touch it
+        if (flag != PHP_FLAG_STRING && flag != PHP_FLAG_PHP_SERIALIZED && flag != PHP_FLAG_JSON_SERIALIZED) {
+            return null;
+        }
+
         final byte[] data = entry.getValue();
         final int decompressedLength = data.length;
 
         // If data length is below the threshold, we leave it uncompressed
         if (decompressedLength < COMPRESSION_THRESHOLD) {
-            return null;
-        }
-
-        // We only compress Strings and serialized values
-        if (flag != PHP_FLAG_STRING && flag != PHP_FLAG_PHP_SERIALIZED && flag != PHP_FLAG_JSON_SERIALIZED) {
-            logger.warning(getKey(entry) + " has the wrong flag: " + flag);
             return null;
         }
 

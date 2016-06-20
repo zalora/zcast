@@ -6,7 +6,7 @@
 
     <groupId>com.zalora</groupId>
     <artifactId>zcast</artifactId>
-    <version>0.1.2</version>
+    <version>0.1.3</version>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -15,11 +15,13 @@
             <artifactId>hazelcast</artifactId>
             <version>3.6.3</version>
         </dependency>
+
         <dependency>
             <groupId>net.jpountz.lz4</groupId>
             <artifactId>lz4</artifactId>
             <version>1.3.0</version>
         </dependency>
+
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
