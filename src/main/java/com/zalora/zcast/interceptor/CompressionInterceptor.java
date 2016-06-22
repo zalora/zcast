@@ -4,6 +4,7 @@ import net.jpountz.lz4.*;
 import java.io.Serializable;
 import com.hazelcast.logging.*;
 import com.hazelcast.map.MapInterceptor;
+import com.google.common.collect.ImmutableList;
 import com.hazelcast.internal.ascii.memcache.MemcacheEntry;
 
 import static com.hazelcast.util.StringUtil.bytesToString;
@@ -17,8 +18,13 @@ import static com.hazelcast.util.StringUtil.bytesToString;
 public class CompressionInterceptor implements MapInterceptor, Serializable {
 
     private static final int PHP_FLAG_STRING = 0;
+    private static final int PHP_FLAG_LONG = 1;
     private static final int PHP_FLAG_PHP_SERIALIZED = 4;
     private static final int PHP_FLAG_JSON_SERIALIZED = 6;
+
+    public static final ImmutableList<Integer> PHP_FLAGS = ImmutableList.of(
+        PHP_FLAG_STRING, PHP_FLAG_LONG, PHP_FLAG_PHP_SERIALIZED, PHP_FLAG_JSON_SERIALIZED
+    );
 
     private static final int ZCAST_FLAG_STRING = 1;
     private static final int ZCAST_FLAG_PHP_SERIALIZED = 2;
@@ -48,27 +54,42 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
     @Override
     public Object interceptGet(Object value) {
-        if (value == null || !(value instanceof MemcacheEntry)) {
+        if (value == null) {
+            logger.finest("Item not found");
             return null;
+        }
+
+        if (!(value instanceof MemcacheEntry)) {
+            logger.warning(String.format("Item is not a MemcacheEntry, but a %s", value.getClass().getName()));
         }
 
         final MemcacheEntry entry = (MemcacheEntry) value;
         final int flag = entry.getFlag();
+        String key = getKey(entry);
 
         // If it's uncompressed, we're done here
-        if (flag <= 8) {
+        if (PHP_FLAGS.contains(flag)) {
+            logger.fine(String.format("Key '%s' has flag %d: Stays untouched", key, flag));
             return null;
         }
 
         final byte[] compressed = entry.getValue();
         final int decompressedLength = getOriginalEntrySize(flag);
         byte[] uncompressed = new byte[decompressedLength];
-        fastDecompressor.decompress(compressed, 0, uncompressed, 0, decompressedLength);
+
+        try {
+            fastDecompressor.decompress(compressed, 0, uncompressed, 0, decompressedLength);
+        } catch (LZ4Exception lex) {
+            logger.severe(String.format("Key '%s' failed to decompress", key), lex);
+            return null;
+        }
 
         // Return uncompressed item to memcached client
-        return new MemcacheEntry(getKey(entry), uncompressed, getOriginalFlag(flag));
-    }
+        int originalFlag = getOriginalFlag(flag);
 
+        logger.fine(String.format("Decompressed Key '%s', restored flag to %d", key, originalFlag));
+        return new MemcacheEntry(key, uncompressed, originalFlag);
+    }
 
     /**
      * Intercept the new object to set and decide if it has to be compressed or not
@@ -84,9 +105,11 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         final MemcacheEntry entry = (MemcacheEntry) value;
         final int flag = entry.getFlag();
+        final String key = getKey(entry);
 
         // If flags are not PHP values, then it's probably already compressed, so we don't touch it
-        if (flag != PHP_FLAG_STRING && flag != PHP_FLAG_PHP_SERIALIZED && flag != PHP_FLAG_JSON_SERIALIZED) {
+        if (!PHP_FLAGS.contains(flag)) {
+            logger.fine(String.format("Key '%s' has flag %d and stays uncompressed", key, flag));
             return null;
         }
 
@@ -95,6 +118,7 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         // If data length is below the threshold, we leave it uncompressed
         if (decompressedLength < COMPRESSION_THRESHOLD) {
+            logger.fine(String.format("Key '%s' is too small to be compressed: %d bytes", getKey(entry), data.length));
             return null;
         }
 
@@ -107,7 +131,10 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
         System.arraycopy(compressed, 0, trimmedCompressed, 0, compressedLength);
 
         // Put compressed item in hz
-        return new MemcacheEntry(getKey(entry), trimmedCompressed, getNewFlag(flag, decompressedLength));
+        int newFlag = getNewFlag(flag, decompressedLength);
+
+        logger.fine(String.format("Key '%s' now is %d bytes and has the flag %d", key, compressedLength, newFlag));
+        return new MemcacheEntry(key, trimmedCompressed, newFlag);
     }
 
     /**
