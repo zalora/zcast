@@ -48,8 +48,8 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
      * Init logger
      * @param loggingService Hz's logging service
      */
-    public CompressionInterceptor(LoggingService loggingService) {
-        logger = loggingService.getLogger(getClass().getName());
+    public CompressionInterceptor(LoggingService loggingService, String map) {
+        logger = loggingService.getLogger("zcast.interceptor." + map);
     }
 
     @Override

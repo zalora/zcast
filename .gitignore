@@ -11,3 +11,6 @@ buildNumber.properties
 # IDE
 *.iml
 .idea
+
+# Configuration
+src/main/resources/compression.yml

@@ -1,7 +1,10 @@
 package com.zalora.zcast;
 
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
+import java.util.List;
+import java.io.IOException;
+import com.hazelcast.core.*;
+import com.hazelcast.logging.*;
+import org.yaml.snakeyaml.Yaml;
 import com.zalora.zcast.interceptor.CompressionInterceptor;
 
 /**
@@ -9,18 +12,29 @@ import com.zalora.zcast.interceptor.CompressionInterceptor;
  */
 public class Start {
 
-    public static final String ZCAST_DEFAULT_MAP = "hz_memcache_default";
-
     /**
      * Add compression interceptor to memcached map
-     * @param args
+     * @param args CLI args are ignored
      */
+    @SuppressWarnings("unchecked")
     public static void main(String[] args) {
-        HazelcastInstance hz = Hazelcast.newHazelcastInstance();
-        hz.getMap(ZCAST_DEFAULT_MAP).addInterceptor(new CompressionInterceptor(hz.getLoggingService()));
+        final Yaml yaml = new Yaml();
+        final List<String> mapNames;
 
-        hz.getLoggingService()
-            .getLogger(Start.class.getName())
-            .info(String.format("Added %s to map %s", CompressionInterceptor.class.getName(), ZCAST_DEFAULT_MAP));
+        final HazelcastInstance hz = Hazelcast.newHazelcastInstance();
+        final LoggingService loggingService = hz.getLoggingService();
+        final ILogger logger = loggingService.getLogger(Start.class.getClass());
+
+        try {
+            mapNames = (List<String>) yaml.load(Start.class.getClass().getResource("/compression.yml").openStream());
+            for (String mapName : mapNames) {
+                hz.getMap(mapName).addInterceptor(new CompressionInterceptor(loggingService, mapName));
+                logger.info(String.format("Added Compression Interceptor to %s", mapName));
+            }
+        } catch (IOException ex) {
+            logger.severe(ex);
+        } catch (NullPointerException npe) {
+            logger.severe("Couldn't process the compression config file, launching ZCast without compression!");
+        }
     }
 }
