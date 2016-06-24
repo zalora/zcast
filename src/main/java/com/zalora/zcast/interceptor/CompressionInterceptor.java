@@ -2,7 +2,6 @@ package com.zalora.zcast.interceptor;
 
 import net.jpountz.lz4.*;
 import java.io.Serializable;
-import com.hazelcast.logging.*;
 import com.hazelcast.map.MapInterceptor;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.internal.ascii.memcache.MemcacheEntry;
@@ -22,7 +21,7 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
     private static final int PHP_FLAG_PHP_SERIALIZED = 4;
     private static final int PHP_FLAG_JSON_SERIALIZED = 6;
 
-    public static final ImmutableList<Integer> PHP_FLAGS = ImmutableList.of(
+    private static final ImmutableList<Integer> PHP_FLAGS = ImmutableList.of(
         PHP_FLAG_STRING, PHP_FLAG_LONG, PHP_FLAG_PHP_SERIALIZED, PHP_FLAG_JSON_SERIALIZED
     );
 
@@ -36,31 +35,16 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
     private static final LZ4Compressor compressor;
     private static final LZ4FastDecompressor fastDecompressor;
 
-    private final transient ILogger logger;
-
     static {
         lz4Factory = LZ4Factory.fastestInstance();
         compressor = lz4Factory.fastCompressor();
         fastDecompressor = lz4Factory.fastDecompressor();
     }
 
-    /**
-     * Init logger
-     * @param loggingService Hz's logging service
-     */
-    public CompressionInterceptor(LoggingService loggingService, String map) {
-        logger = loggingService.getLogger("zcast.interceptor." + map);
-    }
-
     @Override
     public Object interceptGet(Object value) {
-        if (value == null) {
-            logger.finest("Item not found");
+        if (value == null || !(value instanceof MemcacheEntry)) {
             return null;
-        }
-
-        if (!(value instanceof MemcacheEntry)) {
-            logger.warning(String.format("Item is not a MemcacheEntry, but a %s", value.getClass().getName()));
         }
 
         final MemcacheEntry entry = (MemcacheEntry) value;
@@ -69,7 +53,6 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         // If it's uncompressed, we're done here
         if (PHP_FLAGS.contains(flag)) {
-            logger.fine(String.format("Key '%s' has flag %d: Stays untouched", key, flag));
             return null;
         }
 
@@ -80,14 +63,12 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
         try {
             fastDecompressor.decompress(compressed, 0, uncompressed, 0, decompressedLength);
         } catch (LZ4Exception lex) {
-            logger.severe(String.format("Key '%s' failed to decompress", key), lex);
             return null;
         }
 
         // Return uncompressed item to memcached client
         int originalFlag = getOriginalFlag(flag);
 
-        logger.fine(String.format("Decompressed Key '%s', restored flag to %d", key, originalFlag));
         return new MemcacheEntry(key, uncompressed, originalFlag);
     }
 
@@ -109,7 +90,6 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         // If flags are not PHP values, then it's probably already compressed, so we don't touch it
         if (!PHP_FLAGS.contains(flag)) {
-            logger.fine(String.format("Key '%s' has flag %d and stays uncompressed", key, flag));
             return null;
         }
 
@@ -118,7 +98,6 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
 
         // If data length is below the threshold, we leave it uncompressed
         if (decompressedLength < COMPRESSION_THRESHOLD) {
-            logger.fine(String.format("Key '%s' is too small to be compressed: %d bytes", getKey(entry), data.length));
             return null;
         }
 
@@ -133,7 +112,6 @@ public class CompressionInterceptor implements MapInterceptor, Serializable {
         // Put compressed item in hz
         int newFlag = getNewFlag(flag, decompressedLength);
 
-        logger.fine(String.format("Key '%s' now is %d bytes and has the flag %d", key, compressedLength, newFlag));
         return new MemcacheEntry(key, trimmedCompressed, newFlag);
     }
 

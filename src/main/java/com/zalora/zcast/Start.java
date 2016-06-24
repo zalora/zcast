@@ -1,9 +1,9 @@
 package com.zalora.zcast;
 
-import com.google.common.collect.Iterables;
 import com.hazelcast.core.*;
 import com.hazelcast.logging.*;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.zalora.zcast.interceptor.CompressionInterceptor;
 
 /**
@@ -25,9 +25,10 @@ public class Start {
         final HazelcastInstance hz = Hazelcast.newHazelcastInstance();
         final LoggingService loggingService = hz.getLoggingService();
         final ILogger logger = loggingService.getLogger(Start.class.getClass());
+        final CompressionInterceptor compressionInterceptor = new CompressionInterceptor();
 
         for (String mapName : mapNames) {
-            hz.getMap(mapName).addInterceptor(new CompressionInterceptor(loggingService, mapName));
+            hz.getMap(mapName).addInterceptor(compressionInterceptor);
             logger.info(String.format("Added Compression Interceptor to %s", mapName));
         }
 
