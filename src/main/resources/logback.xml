@@ -20,7 +20,7 @@
                 <appName>zcast</appName>
             </layout>
         </encoder>
-        <file>zcast.json</file>
+        <file>${zcast.logging.file}</file>
     </appender>
 
     <logger name="com.hazelcast.nio.tcp" level="warn" />
