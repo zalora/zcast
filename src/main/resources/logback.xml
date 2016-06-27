@@ -4,17 +4,30 @@
 
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>info</level>
         </filter>
         <encoder>
             <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
         </encoder>
     </appender>
 
-    <logger name="com.hazelcast.nio.tcp" level="warn" />
-    <logger name="com.hazelcast.partition" level="warn" />
+    <appender name="filo" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>info</level>
+        </filter>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="com.zalora.logback.layouts.BunyanLayout">
+                <appName>zcast</appName>
+            </layout>
+        </encoder>
+        <file>zcast.json</file>
+    </appender>
 
-    <root level="INFO">
+    <logger name="com.hazelcast.nio.tcp" level="warn" />
+    <logger name="com.hazelcast.partition" level="info" />
+
+    <root level="info">
+        <appender-ref ref="filo" />
         <appender-ref ref="stdout" />
     </root>
 </configuration>

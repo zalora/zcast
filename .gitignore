@@ -11,3 +11,7 @@ buildNumber.properties
 # IDE
 *.iml
 .idea
+
+# Dev stuffs
+zcast.sh
+zcast.json
