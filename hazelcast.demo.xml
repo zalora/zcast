@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xmlns="http://www.hazelcast.com/schema/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.6.xsd">
+    <properties>
+        <property name="hazelcast.memcache.enabled">true</property>
+        <property name="hazelcast.rest.enabled">true</property>
+        <property name="hazelcast.jmx">true</property>
+        <property name="hazelcast.jmx.detailed">true</property>
+        <property name="hazelcast.logging.type">slf4j</property>
+        <property name="zcast.logging.file">/tmp/zcast.json</property>
+        <property name="zcast.maps">
+            hz_memcache_data, hz_memcache_sessions, hz_memcache_develop
+        </property>
+    </properties>
+
+    <network>
+        <port auto-increment="false" port-count="1">5701</port>
+        <join>
+            <multicast enabled="false" />
+            <tcp-ip enabled="true" connection-timeout-seconds="10" />
+        </join>
+    </network>
+</hazelcast>

@@ -17,9 +17,19 @@ don't say we didn't warn you ;-)
 ### Run
 
 In previous versions, compressions was only turned on for the default map. As we're now distributing the data among a couple of maps, we 
-made it configurable. Just pass in a comma separated list of maps (Including the `hz_memcache_` prefix) via the flag `compressed.maps`:
+made it configurable. Have a look at the hazelcast.demo.xml file, the property `zcast.maps` holds the list of compressed maps.
 
-`java -server -Xmx6G -Dcompressed.maps=hz_memcache_map1,hz_memcache_map2 -jar target/zcast-all-0.1.x.jar`
+`java -server -Xmx6G -jar target/zcast-all-0.1.x.jar`
+
+### Logging
+
+We're huge fans of the Bunyan project, so we also added a logback layout for it. It's not a real project
+like [Punyan](https://www.github.com/zalora/punyan), so don't expect too much, but it produces compatible output. If you 
+have recommendations how to improve it, you're welcome to send us pull requests!
+
+You can configure everything via the hazelcast.xml file again, the demo file includes the settings, too:
+- Set the property `hazelcast.logging.type` to `slf4j`
+- Configure the file path to the logfile by setting the property `zcast.logging.file` to whatever you want 
 
 ## License
 
